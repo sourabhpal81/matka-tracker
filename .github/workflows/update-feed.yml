@@ -1,0 +1,50 @@
+name: Update feed (scrape + publish)
+
+# Runs twice a day on GitHub's servers: scrapes the latest results, rebuilds
+# feed.json, and commits it back. Every installed app then pulls the fresh feed
+# on next open — no PC, no reinstall, fully automatic.
+#
+# You can also run it on demand from the Actions tab (Run workflow).
+
+on:
+  schedule:
+    - cron: '30 8 * * *'    # ~2pm IST
+    - cron: '30 18 * * *'   # ~midnight IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-feed
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scrape latest results into matka.db
+        run: python auto_update.py --days 12 --quiet || true
+
+      - name: Rebuild feed.json (+ feed.js)
+        run: python export_feed.py --out app_ui/feed.json
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add matka.db app_ui/feed.json app_ui/feed.js
+          if git diff --staged --quiet; then
+            echo "No changes to publish."
+          else
+            git commit -m "Auto update feed: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
