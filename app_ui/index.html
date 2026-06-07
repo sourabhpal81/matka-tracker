@@ -73,6 +73,9 @@
   .mc .pill{font-size:10px;font-weight:800;color:#0b0e1f;padding:2px 7px;border-radius:20px}
   .star{position:absolute;top:10px;right:10px;font-size:17px;color:#454c80;cursor:pointer;z-index:2}
   .star.on{color:var(--s12)}
+  .mc.undec{opacity:.55}
+  .mc .wait{font-size:11px;color:var(--faint);font-weight:700}
+  .mc .prev{font-size:10px;color:var(--faint);margin-top:3px}
   /* detail overlay */
   .sheet{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;transform:translateY(100%);
     transition:transform .25s cubic-bezier(.3,.7,.3,1);padding-bottom:30px}
@@ -189,7 +192,7 @@ const fav={get(){try{return JSON.parse(localStorage.matka_fav||"[]")}catch(e){re
   toggle(n){let f=this.get();f=f.includes(n)?f.filter(x=>x!==n):[...f,n];localStorage.matka_fav=JSON.stringify(f)},
   has(n){return this.get().includes(n)}};
 let FEED=window.__FEED__||null, TAB="results", SEARCH="", FILT="All", SEL=null, ASEL="__ALL__",
-    PERIOD={type:"month",y:"all",m:"all",d:null,wk:null,_init:false}, CMP=[];
+    PERIOD={type:"month",y:"all",m:"all",d:null,wk:null,_init:false}, CMP=[], RDATE=null;
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
@@ -212,6 +215,7 @@ async function load(force){
   if(!FEED){document.getElementById('view').innerHTML='<div class="center"><span class="ic">📡</span>Could not load data.<br>Tap ⟳ to retry.</div>';return;}
   if(!PERIOD._init && FEED.latest_date){const lt=FEED.latest_date;
     PERIOD={type:"month",y:lt.slice(0,4),m:lt.slice(5,7),d:lt,wk:weekStart(lt),_init:true};}
+  if(!RDATE)RDATE=FEED.latest_date;
   document.getElementById('hsub').textContent="Latest: "+dayName(FEED.latest_date);
   render();
 }
@@ -281,6 +285,8 @@ function pickA(){return `<div class="selrow"><select onchange="ASEL=this.value;r
   ${sorted().map(m=>`<option ${ASEL===m.name?'selected':''}>${m.name}</option>`).join('')}</select></div>`;}
 window.toggleCmp=n=>{if(CMP.includes(n))CMP=CMP.filter(x=>x!==n);else if(CMP.length<5)CMP=[...CMP,n];else toast("Up to 5 markets");render();};
 window.__back=()=>{const s=document.getElementById('sheet');if(s&&s.classList.contains('open')){closeSheet();return true;}return false;};
+function fmtFull(iso){const dt=ymd(iso);return["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][dt.getUTCDay()]+", "+dt.getUTCDate()+" "+MON[dt.getUTCMonth()];}
+window.stepRDATE=dir=>{RDATE=shiftDate(RDATE,dir);if(RDATE>FEED.latest_date)RDATE=FEED.latest_date;render();};
 
 function nav(t){TAB=t;SEARCH="";FILT="All";
   document.querySelectorAll('.nav b').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
@@ -309,29 +315,37 @@ function filtList(l){const q=SEARCH.trim().toLowerCase();
   if(FILT!=="All")r=r.filter(m=>cat(m.name)===FILT);return r;}
 
 function mcard(m){
-  const j=m.latest_jodi,g=j?sg(j):null,c=g?SUMC[g]:"#444";
-  return `<div class="mc" onclick="openM('${esc(m.name)}')">
+  const j=m.results[RDATE], dec=!!j, g=dec?sg(j):null, c=dec?SUMC[g]:"#3a4170";
+  let prev='';
+  if(!dec){const ds=Object.keys(m.results).filter(x=>x<RDATE).sort();const pd=ds[ds.length-1];
+    prev=pd?`prev ${m.results[pd]} · ${pd.slice(8)}/${pd.slice(5,7)}`:'no data';}
+  return `<div class="mc ${dec?'':'undec'}" onclick="openM('${esc(m.name)}')">
     <div class="edge" style="background:${c}"></div>
     <div class="star ${fav.has(m.name)?'on':''}" onclick="toggleFav('${esc(m.name)}',event)">${fav.has(m.name)?'★':'☆'}</div>
     <div class="top"><div><div class="nm">${m.name}</div><div class="cat">${cat(m.name)}</div></div></div>
-    <div class="jodi">${j||'--'}</div>
-    <div class="meta">${g?`<span class="pill" style="background:${c}">SUM ${g}</span>`:''}
-      <span>${j?ago(m.latest_date,FEED.today):'no data'}</span></div>
+    <div class="jodi">${dec?j:'—'}</div>
+    <div class="meta">${dec?`<span class="pill" style="background:${c}">SUM ${g}</span><span>declared</span>`:`<span class="wait">not declared</span>`}</div>
+    ${dec?'':`<div class="prev">${prev}</div>`}
   </div>`;}
 
 function renderResults(v){
-  const today=FEED.today;
-  const declared=sorted().filter(m=>m.latest_date===today);
-  const dist={10:0,11:0,12:0,13:0,14:0};declared.forEach(m=>dist[sg(m.latest_jodi)]++);
+  if(!RDATE)RDATE=FEED.latest_date;
+  const d=RDATE, isToday=d===FEED.today;
+  const declared=sorted().filter(m=>m.results[d]);
+  const dist={10:0,11:0,12:0,13:0,14:0};declared.forEach(m=>dist[sg(m.results[d])]++);
   const tot=declared.length||1;
   const stack=[10,11,12,13,14].map(s=>`<i style="width:${dist[s]/tot*100}%;background:${SUMC[s]}"></i>`).join('');
   const leg=[10,11,12,13,14].map(s=>`<span><i style="background:${SUMC[s]}"></i>${s}<b style="color:#fff;margin-left:2px">${dist[s]}</b></span>`).join('');
+  const fwd=d>=FEED.latest_date;
+  const stepper=`<div class="stepper"><span class="sbtn" onclick="stepRDATE(-1)">◀</span>
+    <span class="slabel">${fmtFull(d)}${isToday?' · Today':''}</span>
+    <span class="sbtn" style="${fwd?'opacity:.35;pointer-events:none':''}" onclick="stepRDATE(1)">▶</span></div>`;
   const hero=`<div class="hero"><div class="row">
-      <div><div class="big">Today's board</div><div class="day">${dayName(today)}</div></div>
+      <div><div class="big">Results board</div><div class="day">${isToday?'Today, live':'this date'}</div></div>
       <div class="count"><b>${declared.length}</b><span>of ${FEED.market_count} declared</span></div></div>
       <div class="stack">${stack}</div><div class="legend">${leg}</div></div>`;
   const chips=["All","Morning","Day","Night"].map(f=>`<div class="chip ${FILT===f?'on':''}" onclick="setFilt('${f}')">${f}</div>`).join('');
-  v.innerHTML=hero+searchBox()+`<div class="chips">${chips}</div><div id="list"></div>`;
+  v.innerHTML=stepper+hero+searchBox()+`<div class="chips">${chips}</div><div id="list"></div>`;
   fillList();
 }
 function renderFav(v){
