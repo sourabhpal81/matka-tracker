@@ -3,6 +3,13 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
+    # Don't rebuild the APK for routine data updates (the app pulls the live feed).
+    # Only rebuild when app code / project files actually change.
+    paths-ignore:
+      - 'app_ui/feed.json'
+      - 'app_ui/feed.js'
+      - 'matka.db'
+      - 'last_update.json'
   workflow_dispatch:
 
 permissions:

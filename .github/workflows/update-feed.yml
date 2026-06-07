@@ -8,8 +8,9 @@ name: Update feed (scrape + publish)
 
 on:
   schedule:
-    - cron: '30 8 * * *'    # ~2pm IST
-    - cron: '30 18 * * *'   # ~midnight IST
+    # Every 30 minutes during market hours (~08:30 AM to ~02:00 AM IST).
+    # Cron is UTC; IST = UTC+5:30. 03:00-20:30 UTC covers the result window.
+    - cron: '0,30 3-20 * * *'
   workflow_dispatch:
 
 permissions:
