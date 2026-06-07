@@ -10,4 +10,4 @@
 // Example (Firebase Hosting):
 // window.FEED_URL = "https://matka-tracker.web.app/feed.json";
 
-// window.FEED_URL = "https://.../feed.json";
+window.FEED_URL = "https://raw.githubusercontent.com/sourabhpal81/matka-tracker/main/app_ui/feed.json";
