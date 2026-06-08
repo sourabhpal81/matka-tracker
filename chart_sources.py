@@ -28,19 +28,20 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 
 # market name (exactly as in matka.db) -> full panel-chart URL
 MARKET_CHARTS = {
-    # --- Bombay site ---
-    "Kalyan":        SITE_BOMBAY + "/record/kalyan-penal-chart.php",
-    "Kalyan Night":  SITE_BOMBAY + "/record/kalyan-night-penal-chart.php",
-    "Main Bazaar":   SITE_BOMBAY + "/main-bazar-panel-chart.php",
-    "Time Bazaar":   SITE_BOMBAY + "/time-bazar-panel-chart.php",
-    "Milan Day":     SITE_BOMBAY + "/record/milan-day-penal-chart.php",
-    "Milan Night":   SITE_BOMBAY + "/record/milan-night-penal-chart.php",
-    "Rajdhani Day":  SITE_BOMBAY + "/record/rajdhani-day-penal-chart.php",
-    "Rajdhani Night":SITE_BOMBAY + "/record/rajdhani-night-penal-chart.php",
-    "Madhur Day":    SITE_BOMBAY + "/madhur-day-panel-chart.php",
-    "Madhur Night":  SITE_BOMBAY + "/madhur-night-panel-chart.php",
-    "Sridevi":       SITE_BOMBAY + "/record/sridevi-satta-penal-chart.php",
-    "Sridevi Night": SITE_BOMBAY + "/record/sridevi-night-satta-penal-chart.php",
+    # --- Bombay/main markets (served by the Andhra site too; that host is the
+    #     one reachable from GitHub's servers, so we use it for all 31) ---
+    "Kalyan":        SITE_ANDHRA + "/panel-chart-record/kalyan.php",
+    "Kalyan Night":  SITE_ANDHRA + "/panel-chart-record/kalyan-night.php",
+    "Main Bazaar":   SITE_ANDHRA + "/panel-chart-record/main-bazar.php",
+    "Time Bazaar":   SITE_ANDHRA + "/panel-chart-record/time-bazar.php",
+    "Milan Day":     SITE_ANDHRA + "/panel-chart-record/milan-day.php",
+    "Milan Night":   SITE_ANDHRA + "/panel-chart-record/milan-night.php",
+    "Rajdhani Day":  SITE_ANDHRA + "/panel-chart-record/rajdhani-day.php",
+    "Rajdhani Night":SITE_ANDHRA + "/panel-chart-record/rajdhani-night.php",
+    "Madhur Day":    SITE_ANDHRA + "/panel-chart-record/madhur-day.php",
+    "Madhur Night":  SITE_ANDHRA + "/panel-chart-record/madhur-night.php",
+    "Sridevi":       SITE_ANDHRA + "/panel-chart-record/sridevi.php",
+    "Sridevi Night": SITE_ANDHRA + "/panel-chart-record/sridevi-night.php",
     # --- Andhra site ---
     "Sita Morning":      SITE_ANDHRA + "/panel-chart-record/sita-morning.php",
     "Sita Day":          SITE_ANDHRA + "/panel-chart-record/sita-day.php",
