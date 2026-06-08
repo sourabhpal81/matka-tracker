@@ -75,6 +75,7 @@
   .star.on{color:var(--s12)}
   .mc.undec{opacity:.55}
   .mc .wait{font-size:11px;color:var(--faint);font-weight:700}
+  .mc .closed{font-size:11px;color:#8a91c0;font-weight:700}
   .mc .prev{font-size:10px;color:var(--faint);margin-top:3px}
   /* detail overlay */
   .sheet{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;transform:translateY(100%);
@@ -314,17 +315,24 @@ function filtList(l){const q=SEARCH.trim().toLowerCase();
   let r=q?l.filter(m=>m.name.toLowerCase().includes(q)):l;
   if(FILT!=="All")r=r.filter(m=>cat(m.name)===FILT);return r;}
 
+function isClosedOn(closures, iso){
+  if(!closures)return false;
+  const wd=dowOf(iso);
+  return String(closures).split(',').map(x=>x.trim()).filter(x=>x!=='').map(Number).includes(wd);
+}
 function mcard(m){
   const j=m.results[RDATE], dec=!!j, g=dec?sg(j):null, c=dec?SUMC[g]:"#3a4170";
+  const closed=!dec && isClosedOn(m.closures, RDATE);
   let prev='';
   if(!dec){const ds=Object.keys(m.results).filter(x=>x<RDATE).sort();const pd=ds[ds.length-1];
     prev=pd?`prev ${m.results[pd]} · ${pd.slice(8)}/${pd.slice(5,7)}`:'no data';}
+  const note = dec ? '' : (closed ? '<span class="closed">● Closed</span>' : '<span class="wait">awaiting result</span>');
   return `<div class="mc ${dec?'':'undec'}" onclick="openM('${esc(m.name)}')">
-    <div class="edge" style="background:${c}"></div>
+    <div class="edge" style="background:${dec?c:(closed?'#555c86':c)}"></div>
     <div class="star ${fav.has(m.name)?'on':''}" onclick="toggleFav('${esc(m.name)}',event)">${fav.has(m.name)?'★':'☆'}</div>
     <div class="top"><div><div class="nm">${m.name}</div><div class="cat">${cat(m.name)}</div></div></div>
     <div class="jodi">${dec?j:'—'}</div>
-    <div class="meta">${dec?`<span class="pill" style="background:${c}">SUM ${g}</span><span>declared</span>`:`<span class="wait">not declared</span>`}</div>
+    <div class="meta">${dec?`<span class="pill" style="background:${c}">SUM ${g}</span><span>declared</span>`:note}</div>
     ${dec?'':`<div class="prev">${prev}</div>`}
   </div>`;}
 
