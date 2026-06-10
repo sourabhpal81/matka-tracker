@@ -81,6 +81,42 @@ def predict_from(rows):
     }
 
 
+def backtest(rows, window=60):
+    """Walk-forward honesty check: for each recent day, predict from the days
+    BEFORE it, then compare to what actually came. Returns real hit rates.
+    rows: list of (date, jodi) sorted by date."""
+    if len(rows) < 15:
+        return None
+    start = max(6, len(rows) - window)
+    tested = top1 = top5 = top10 = sumhit = 0
+    for i in range(start, len(rows)):
+        p = predict_from(rows[:i])
+        if not p:
+            continue
+        actual = rows[i][1]
+        tops = [x[0] for x in p["top"]]
+        tested += 1
+        if tops and actual == tops[0]:
+            top1 += 1
+        if actual in tops[:5]:
+            top5 += 1
+        if actual in tops[:10]:
+            top10 += 1
+        if tops and sum_group(actual) == sum_group(tops[0]):
+            sumhit += 1
+    if tested == 0:
+        return None
+    def pct(x):
+        return round(100.0 * x / tested, 1)
+    return {
+        "tested": tested,
+        "top1_pct": pct(top1), "top5_pct": pct(top5), "top10_pct": pct(top10),
+        "sum_pct": pct(sumhit),
+        # what blind chance would score, for honest comparison:
+        "rand_top1": 1.0, "rand_top5": 5.0, "rand_top10": 10.0, "rand_sum": 20.0,
+    }
+
+
 def month_analysis(rows, month):
     """rows for one market; month 'YYYY-MM'. Returns sum_counts, digit_counts, total."""
     sc = {10: 0, 11: 0, 12: 0, 13: 0, 14: 0}
@@ -130,6 +166,7 @@ def build_feed(days=None):
             "latest_jodi": rows[-1][1] if rows else None,
             "month": {"label": cur_month, **month_analysis(rows, cur_month)},
             "predict": predict_from(rows),
+            "backtest": backtest(rows),
         })
     conn.close()
     return {
