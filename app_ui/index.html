@@ -413,12 +413,27 @@ function chartBody(m){
     <div class="panel"><h3>${m.name}</h3><div class="hint">Last ${dates.length} results · colored by sum group</div>
       <div class="wk">${heads}</div><div class="cgrid">${cells}</div></div>`;}
 
+function accRow(label,got,rand){
+  const better=got>rand*1.3, worse=got<rand*0.8;
+  const col=better?'#66BB6A':(worse?'#EF5350':'#9098c4');
+  return `<div class="bar"><div class="lb" style="width:92px;font-size:11px;color:#cdd3f5">${label}</div>
+    <div class="tr"><div class="fl" style="width:${Math.min(got,100)}%;background:${col}">${got}%</div></div>
+    <div class="pc" style="width:96px">chance ${rand}%</div></div>`;}
+function backtestPanel(m){const b=m.backtest;
+  if(!b)return '';
+  return `<div class="panel"><h3>Tested accuracy</h3>
+    <div class="hint">How these predictions actually did over the last ${b.tested} days, vs blind luck. Higher than "chance" would mean an edge — for matka it stays near chance, because draws are random.</div>
+    ${accRow('Exact #1',b.top1_pct,b.rand_top1)}
+    ${accRow('In top 5',b.top5_pct,b.rand_top5)}
+    ${accRow('In top 10',b.top10_pct,b.rand_top10)}
+    ${accRow('Sum group',b.sum_pct,b.rand_sum)}
+    <div class="hint" style="margin-top:8px">⚠️ Results are random. Treat predictions as reference only, never as a guarantee — bet only what you can afford to lose.</div></div>`;}
 function predictBody(m){const p=m.predict;
   if(!p)return `<div class="center"><span class="ic">🔮</span>Not enough history to predict yet.</div>`;
   const tiles=p.top.map((t,i)=>{const j=t[0],g=sg(j);
     return `<div class="pj" style="border-color:${SUMC[g]}"><div class="v">${j}</div><div class="r">#${i+1}·S${g}</div></div>`;}).join('');
   return `<div class="panel"><div class="hint">Last result <b style="color:#fff">${p.last_jodi}</b> · Sum ${p.last_sum}. Frequency + Markov, for reference only.</div>
-    <h3 style="margin-top:6px">Top 10 likely jodis</h3><div class="preds" style="margin-top:10px">${tiles}</div></div>`;}
+    <h3 style="margin-top:6px">Top 10 likely jodis</h3><div class="preds" style="margin-top:10px">${tiles}</div></div>${backtestPanel(m)}`;}
 
 function renderCompare(v){
   if(CMP.length===0)CMP=sorted().slice(0,3).map(m=>m.name);
