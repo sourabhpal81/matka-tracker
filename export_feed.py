@@ -134,6 +134,12 @@ def month_analysis(rows, month):
 def build_feed(days=None):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    # full panna (open-jodi-close) lives in an optional column; add if missing
+    try:
+        conn.execute("ALTER TABLE jodis ADD COLUMN panna TEXT")
+        conn.commit()
+    except Exception:
+        pass
     markets = conn.execute(
         "SELECT id, name, display_order, closures FROM markets ORDER BY display_order"
     ).fetchall()
@@ -146,13 +152,15 @@ def build_feed(days=None):
     feed_markets = []
     latest_overall = ""
     for m in markets:
-        q = "SELECT date, jodi FROM jodis WHERE market_id=?"
+        q = "SELECT date, jodi, panna FROM jodis WHERE market_id=?"
         p = [m["id"]]
         if cutoff:
             q += " AND date>=?"
             p.append(cutoff)
         q += " ORDER BY date"
-        rows = [(r["date"], r["jodi"]) for r in conn.execute(q, p).fetchall()]
+        raw = conn.execute(q, p).fetchall()
+        rows = [(r["date"], r["jodi"]) for r in raw]
+        panna = {r["date"]: r["panna"] for r in raw if r["panna"]}
         if rows:
             latest_overall = max(latest_overall, rows[-1][0])
         results = {d: j for d, j in rows}
@@ -161,6 +169,7 @@ def build_feed(days=None):
             "order": m["display_order"],
             "closures": m["closures"] or "",
             "results": results,
+            "panna": panna,
             "today": results.get(today),
             "latest_date": rows[-1][0] if rows else None,
             "latest_jodi": rows[-1][1] if rows else None,
