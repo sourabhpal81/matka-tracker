@@ -1,0 +1,13 @@
+{
+  "name": "Matka Tracker",
+  "short_name": "Matka",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e1f",
+  "theme_color": "#0b0e1f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

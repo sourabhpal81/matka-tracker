@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b0e1f">
 <title>Matka Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Matka">
 <style>
   :root{
     --bg:#0b0e1f; --bg2:#11152e; --card:#181d3a; --card2:#202650; --line:#2a3160;
@@ -218,6 +225,9 @@ async function load(force){
     PERIOD={type:"month",y:lt.slice(0,4),m:lt.slice(5,7),d:lt,wk:weekStart(lt),_init:true};}
   if(!RDATE)RDATE=FEED.latest_date;
   document.getElementById('hsub').textContent="Latest: "+dayName(FEED.latest_date);
+  // "new results" indicator
+  try{const seen=localStorage.matka_seen; if(seen && FEED.latest_date>seen){toast("New results · "+dayName(FEED.latest_date),"✨");}
+      localStorage.matka_seen=FEED.latest_date;}catch(e){}
   render();
 }
 function mk(n){return FEED.markets.find(m=>m.name===n)}
@@ -397,9 +407,21 @@ function analysisBody(m){const an=m?analyze(m.results):analyzeAll();
   return scope+`<div class="panel"><h3>Sum 10–14 grouping</h3><div class="hint">${an.label} · ${an.total} results</div>${an.total?sumBars(an):'<div class="hint">No results in this period.</div>'}</div>
     <div class="panel"><h3>Digit 0–9 totals</h3><div class="hint">How often each digit appeared (both positions) · ${an.label}</div>${digRow(an)}</div>`;}
 
+function sparkSVG(m,dates){
+  const pts=dates.filter(d=>m.results[d]).map(d=>({d,g:sg(m.results[d])}));
+  if(pts.length<2)return '<div class="hint">Not enough data for a trend.</div>';
+  const W=320,H=92,pad=14;
+  const x=i=>pad+(W-2*pad)*(i/(pts.length-1));
+  const y=g=>pad+(H-2*pad)*(14-g)/4;
+  const line=pts.map((p,i)=>`${x(i).toFixed(1)},${y(p.g).toFixed(1)}`).join(' ');
+  const dots=pts.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.g).toFixed(1)}" r="3.2" fill="${SUMC[p.g]}"/>`).join('');
+  const grid=[10,11,12,13,14].map(g=>`<line x1="${pad}" y1="${y(g).toFixed(1)}" x2="${W-4}" y2="${y(g).toFixed(1)}" stroke="#2a3160"/><text x="0" y="${(y(g)+3).toFixed(1)}" fill="#666e9c" font-size="8">${g}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${grid}<polyline points="${line}" fill="none" stroke="#7c5cff" stroke-width="2"/>${dots}</svg>`;
+}
 function chartBody(m){
   let dates=Object.keys(m.results).sort().filter(inPeriod);
   if(PERIOD.type==='all'||PERIOD.type==='year')dates=dates.slice(-42);
+  const trend=`<div class="panel"><h3>Sum-group trend</h3><div class="hint">Daily sum group (10–14) · ${periodLabel()}</div>${sparkSVG(m,dates)}</div>`;
   const heads=["S","M","T","W","T","F","S"].map(d=>`<div class="h">${d}</div>`).join('');
   let cells='';
   if(dates.length){
@@ -409,7 +431,7 @@ function chartBody(m){
       cells+=`<div class="cell" style="background:${SUMC[g]}"><span>${j}</span><span class="dd">${d.slice(8)}/${d.slice(5,7)}</span></div>`;});
   }
   const leg=[10,11,12,13,14].map(s=>`<span><i style="background:${SUMC[s]}"></i>${s}</span>`).join('');
-  return `<div class="legend" style="margin:0 4px 10px">${leg}</div>
+  return `<div class="legend" style="margin:0 4px 10px">${leg}</div>${trend}
     <div class="panel"><h3>${m.name}</h3><div class="hint">Last ${dates.length} results · colored by sum group</div>
       <div class="wk">${heads}</div><div class="cgrid">${cells}</div></div>`;}
 
@@ -473,6 +495,7 @@ function openSheet(name){
   s.classList.add('open');document.body.style.overflow='hidden';s.scrollTop=0;
 }
 
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 load();
 </script>
 </body>
